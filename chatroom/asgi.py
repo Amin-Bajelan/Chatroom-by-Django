@@ -8,18 +8,24 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
 
 import os
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
+
 from channels.auth import AuthMiddlewareStack
-from chatroom.routing import websocket_urlpatterns  # وارد کردن مسیرهای WebSocket
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
+from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chatroom.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+# Initialize Django ASGI application early to ensure the AppRegistry
+# is populated before importing code that may import ORM models.
+django_asgi_app = get_asgi_application()
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),  # درخواست‌های HTTP به سرور معمولی Django می‌روند
-    "websocket": AuthMiddlewareStack(  # WebSocket‌ها به کانال‌ها هدایت می‌شوند
-        URLRouter(
-            websocket_urlpatterns  # مسیرهای WebSocket که در routing.py تعریف می‌کنید
-        )
-    ),
-})
+from chat.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter(
+    {
+        "http": django_asgi_app,
+        "websocket": AllowedHostsOriginValidator(
+            AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+        ),
+    }
+)

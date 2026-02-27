@@ -1,6 +1,8 @@
 from django.db import models
 from uuid import uuid4
 from django.forms import ValidationError
+from core.models import User
+from django.conf import settings
 # Create your models here.
 
 
@@ -15,7 +17,7 @@ class Group(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     chat_type = models.CharField(max_length=20, choices=CHAT_TYPES)
 
-    members = models.ManyToManyField('CustomUser', related_name='chat_groups')
+    members = models.ManyToManyField('core.User', related_name='chat_groups')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
@@ -28,13 +30,13 @@ class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
 
     group = models.ForeignKey(
-        Group,
+        "Group",
         on_delete=models.CASCADE,
         related_name='messages'
     )
 
     sender = models.ForeignKey(
-        'CustomUser',
+        'core.User',
         on_delete=models.CASCADE,
         related_name='sent_messages'
     )
